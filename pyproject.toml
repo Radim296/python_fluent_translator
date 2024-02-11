@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "python-fluent-translator"
+version = "0.1.0"
+description = ""
+authors = ["Radim <58228032+Radim296@users.noreply.github.com>"]
+readme = "README.md"
+packages = [{include = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pydantic = "^2.4.1"
+openai = "^1.11.1"
+tqdm = "^4.66.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+fluent_trans = "src:main.main"
