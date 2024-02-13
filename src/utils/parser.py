@@ -1,3 +1,4 @@
+from copy import copy
 from typing import Dict, List, Optional
 
 from src.data.const_values import COMMENT_KEY
@@ -27,6 +28,7 @@ class FluentDictionaryParser:
             lines: List[str] = file.readlines()
             key: Optional[str] = None
             value: str = ""
+            comments_counter: int = 0
 
             for line in lines:
                 if not line.lstrip().startswith("#"):
@@ -37,7 +39,8 @@ class FluentDictionaryParser:
                     else:
                         value += line
                 elif line.count("#") > 5:
-                    result_dict[COMMENT_KEY] = line
+                    result_dict[f"{COMMENT_KEY}{comments_counter}"] = line
+                    comments_counter += 1
 
             if key:
                 result_dict[key.strip(" ")] = value.rstrip("\n")
@@ -79,7 +82,7 @@ class FluentDictionaryParser:
         if not self.config.translate_only:
             if not cached_main_dictionary:
                 for key in main_dictionary.messages.keys():
-                    if (key not in self.config.ignored_keys) and (key != COMMENT_KEY):
+                    if (key not in self.config.ignored_keys) and (COMMENT_KEY not in key):
                         if self.config.update_all:
                             keys.append(key)
                         else:
@@ -92,7 +95,7 @@ class FluentDictionaryParser:
                 assert self.config.update_all, "This value should be set to True"
 
                 for key in self.get_diff_keys(first_dictionary=main_dictionary, second_dictionary=cached_main_dictionary):
-                    if (key not in self.config.ignored_keys) and (key != COMMENT_KEY):
+                    if (key not in self.config.ignored_keys) and (COMMENT_KEY not in key):
                         keys.append(key)
         else:
             for key in self.config.translate_only:
@@ -100,6 +103,16 @@ class FluentDictionaryParser:
                 keys.append(key)
 
         return keys
+
+    def fix_dictionary_order(self, dictionary: FluentDictionary, main_dictionary: FluentDictionary) -> FluentDictionary:
+        proper_ordered_messsages: Dict[str, str] = copy(main_dictionary.messages)
+
+        for key, value in dictionary.messages.items():
+            proper_ordered_messsages[key] = value
+
+        dictionary.messages = proper_ordered_messsages
+
+        return dictionary
 
     def load_to_file(self, dictionary: FluentDictionary) -> None:
         """
@@ -118,11 +131,11 @@ class FluentDictionaryParser:
         with open(dictionary.path, "w") as file:
             for key, value in dictionary.messages.items():
                 key = key.strip(" ")
-                if key == COMMENT_KEY:
+                if COMMENT_KEY in key:
                     print(f"\n{value}", file=file)
                 else:
                     if value.count("\n") > 1:
-                        print(f"{key} =", end="\n", file=file)
+                        print(f"\n{key} =", end="\n", file=file)
                         lines = value.split("\n")
 
                         while len(lines) > 0 and lines[0] == "":
@@ -136,4 +149,4 @@ class FluentDictionaryParser:
 
                         print(file=file)
                     else:
-                        print(f"{key} = {value.lstrip()}\n", file=file)
+                        print(f"{key} = {value.lstrip()}", file=file)

@@ -50,7 +50,7 @@ class FluentDictionaryTranslator:
         keys_to_translate: List[str] = self.fluent_parser.get_keys_to_translate(
             main_dictionary=main_dictionary,
             dictionary_to_translate=dictionary_to_translate,
-            cached_main_dictionary=cached_main_dictionary
+            cached_main_dictionary=cached_main_dictionary,
         )
 
         translation_queue: Deque = deque(keys_to_translate)
@@ -64,7 +64,8 @@ class FluentDictionaryTranslator:
                     keys.append(translation_queue.popleft())
 
             translated_values: List[str] = await self.gpt_translator.translate_many(
-                values=[main_dictionary.messages[key] for key in keys], target_language=LANGUAGE_NAMES_BY_CODE[language_code]
+                values=[main_dictionary.messages[key] for key in keys],
+                target_language=LANGUAGE_NAMES_BY_CODE[language_code],
             )
 
             for i in range(len(translated_values)):
@@ -82,6 +83,10 @@ class FluentDictionaryTranslator:
                 path=self.config.dictionaries[language_code],
                 messages=translated_values,
             )
+
+        dictionary_to_translate = self.fluent_parser.fix_dictionary_order(
+            dictionary=dictionary_to_translate, main_dictionary=main_dictionary
+        )
 
         self.fluent_parser.load_to_file(dictionary=dictionary_to_translate)
 
